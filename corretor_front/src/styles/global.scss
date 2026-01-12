@@ -1,0 +1,43 @@
+:root {
+  --primary: #00B37E;
+  --background: #121214;
+  --text: #FFF;
+  --caption: #8D8D99;
+  --gray: #E1E1E6;
+  --background-light: rgba(255, 255, 255, 0.05);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--text);
+
+  font-family: 'Poppins', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font-family: 'Poppins', sans-serif;
+  height: 48px;
+  width: 100%;          /* 100 % of its parent – good for mobile */
+  max-width: 400px;     /* won’t get wider than 400px */
+  /* …rest of the rules… */
+  cursor: pointer;
+}
+
+/* ----------  Light‑mode override (background = white) ---------- */
+@media (prefers-color-scheme: light) {
+  :root {
+    --background: #ffffff;          /* NEW – white page background in light mode */
+    --text: #000;                   /* optional – dark text on white */
+    --primary: #00B37E;             /* keep the same primary colour */
+    --caption: #8D8D99;             /* you can keep the same caption colour */
+    --gray: #E1E1E6;
+    --background-light: rgba(255, 255, 255, 0.05);
+  }
+}
