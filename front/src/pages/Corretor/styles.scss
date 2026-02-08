@@ -1,0 +1,237 @@
+.corretor {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+
+  h1 {
+    margin-bottom: 1.5rem;
+    font-size: 1.8rem;
+  }
+
+  .perguntas {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .pergunta-card {
+    background: var(--background-light);
+    border: 1px solid var(--caption);
+    border-radius: 8px;
+    padding: 1.2rem;
+    position: relative;
+
+    .pergunta-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.8rem;
+
+      span {
+        font-weight: 600;
+        color: var(--primary);
+        white-space: nowrap;
+      }
+
+      input {
+        flex: 1;
+      }
+
+      .input-arquivo {
+        flex: 0 0 160px;
+        font-size: 0.8rem;
+        color: var(--caption);
+      }
+
+      .btn-remover {
+        background: transparent;
+        border: 1px solid #e74c3c;
+        color: #e74c3c;
+        border-radius: 4px;
+        padding: 0.3rem 0.6rem;
+        font-size: 0.8rem;
+        cursor: pointer;
+        white-space: nowrap;
+        height: auto;
+        width: auto;
+        max-width: none;
+
+        &:hover {
+          background: #e74c3c;
+          color: #fff;
+        }
+      }
+    }
+
+    .opcoes {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+
+      .opcao-item {
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+
+        input {
+          width: 140px;
+          font-size: 0.85rem;
+          padding: 0.3rem 0.5rem;
+        }
+
+        .btn-remover-opcao {
+          background: transparent;
+          border: none;
+          color: #e74c3c;
+          cursor: pointer;
+          font-size: 1.1rem;
+          padding: 0;
+          height: auto;
+          width: auto;
+          max-width: none;
+          line-height: 1;
+
+          &:hover {
+            color: #c0392b;
+          }
+        }
+      }
+    }
+
+    .btn-add-opcao {
+      background: transparent;
+      border: 1px dashed var(--caption);
+      color: var(--caption);
+      border-radius: 4px;
+      padding: 0.3rem 0.8rem;
+      font-size: 0.8rem;
+      cursor: pointer;
+      height: auto;
+      width: auto;
+      max-width: none;
+
+      &:hover {
+        border-color: var(--primary);
+        color: var(--primary);
+      }
+    }
+  }
+
+  input[type="text"] {
+    background: var(--background);
+    border: 1px solid var(--caption);
+    border-radius: 4px;
+    color: var(--text);
+    padding: 0.5rem 0.8rem;
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.9rem;
+    outline: none;
+
+    &:focus {
+      border-color: var(--primary);
+    }
+  }
+
+  .acoes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: center;
+    margin-bottom: 2rem;
+
+    .btn-add-pergunta {
+      background: var(--primary);
+      border: none;
+      color: #fff;
+      border-radius: 6px;
+      padding: 0.6rem 1.2rem;
+      font-size: 0.95rem;
+      cursor: pointer;
+      height: auto;
+      width: auto;
+      max-width: none;
+
+      &:hover {
+        opacity: 0.9;
+      }
+    }
+
+    .upload-section {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+
+      label {
+        font-size: 0.9rem;
+        color: var(--caption);
+      }
+
+      input[type="file"] {
+        color: var(--text);
+        font-size: 0.85rem;
+      }
+    }
+
+    .btn-download {
+      background: #27ae60;
+      border: none;
+      color: #fff;
+      border-radius: 6px;
+      padding: 0.6rem 1.5rem;
+      font-size: 1rem;
+      cursor: pointer;
+      height: auto;
+      width: auto;
+      max-width: none;
+
+      &:hover {
+        background: #219a52;
+      }
+    }
+
+    .btn-enviar {
+      background: #2980b9;
+      border: none;
+      color: #fff;
+      border-radius: 6px;
+      padding: 0.6rem 1.5rem;
+      font-size: 1rem;
+      cursor: pointer;
+      height: auto;
+      width: auto;
+      max-width: none;
+
+      &:hover {
+        background: #2471a3;
+      }
+
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+    }
+  }
+
+  .status {
+    padding: 1rem;
+    border-radius: 6px;
+    font-size: 0.95rem;
+
+    &.loading {
+      background: rgba(41, 128, 185, 0.15);
+      color: #5dade2;
+    }
+
+    &.error {
+      background: rgba(231, 76, 60, 0.15);
+      color: #e74c3c;
+    }
+
+    &.success {
+      background: rgba(0, 179, 126, 0.15);
+      color: var(--primary);
+    }
+  }
+}
