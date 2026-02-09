@@ -12,6 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from langchain_ollama import ChatOllama
 from openpyxl import Workbook
+from openpyxl.styles import Alignment
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
@@ -26,7 +27,7 @@ app.add_middleware(
 )
 
 OLLAMA_BASE_URL = "http://localhost:11434"
-OLLAMA_MODEL = "qwen3:14b"
+OLLAMA_MODEL = "gpt-oss:latest"
 
 llm = ChatOllama(
     model=OLLAMA_MODEL,
@@ -136,6 +137,51 @@ def avaliar_codigo(codigo: str, nome_arquivo: str, pergunta: str, opcoes: list[s
     return resposta
 
 
+def justificar_resposta(codigo: str, nome_arquivo: str, pergunta: str, resposta: str) -> str:
+    """Pede ao LLM uma justificativa curta para resposta negativa/parcial."""
+    prompt = (
+        f"Voce eh um AGENTE AVALIADOR de codigo. "
+        f"RESPONDA EXCLUSIVAMENTE EM PORTUGUES.\n\n"
+        f"O codigo abaixo foi avaliado com a seguinte pergunta e obteve a resposta indicada.\n"
+        f"Explique de forma CURTA e DIRETA (1-2 frases) o motivo da resposta.\n\n"
+        f"ARQUIVO(S): {nome_arquivo}\n"
+        f"CODIGO:\n```\n{codigo}\n```\n\n"
+        f"PERGUNTA: {pergunta}\n"
+        f"RESPOSTA DADA: {resposta}\n\n"
+        f"JUSTIFICATIVA CURTA:"
+    )
+    logger.info(f"  LLM justificativa <- {pergunta[:40]}...")
+    response = llm.invoke(prompt)
+    justificativa = limpar_think_tags(response.content).strip()
+    # Pegar so primeiras linhas
+    linhas = [l.strip() for l in justificativa.split("\n") if l.strip()]
+    justificativa = " ".join(linhas[:3])
+    logger.info(f"  LLM justificativa -> {justificativa[:80]}...")
+    return justificativa
+
+
+def resumir_comentarios(justificativas: list[str]) -> str:
+    """Pede ao LLM para resumir todas as justificativas em um comentario unico."""
+    todas = "\n".join(f"- {j}" for j in justificativas)
+    prompt = (
+        f"Voce eh um AGENTE AVALIADOR de codigo. "
+        f"RESPONDA EXCLUSIVAMENTE EM PORTUGUES.\n\n"
+        f"Abaixo estao os problemas encontrados na avaliacao de um aluno.\n"
+        f"Faca um RESUMO CURTO e DIRETO de todos os problemas em um unico paragrafo.\n"
+        f"NAO use markdown, bullets ou formatacao. Apenas texto corrido.\n\n"
+        f"PROBLEMAS:\n{todas}\n\n"
+        f"RESUMO:"
+    )
+    logger.info(f"  LLM resumo comentarios <- {len(justificativas)} justificativas")
+    response = llm.invoke(prompt)
+    resumo = limpar_think_tags(response.content).strip()
+    # Limpar formatacao extra
+    linhas = [l.strip() for l in resumo.split("\n") if l.strip()]
+    resumo = " ".join(linhas)
+    logger.info(f"  LLM resumo -> {resumo[:100]}...")
+    return resumo
+
+
 def extrair_tar(tar_bytes: bytes, filename: str) -> dict[str, str]:
     """Extrai o tar.gz UMA vez e retorna {nome_arquivo: conteudo}."""
     arquivos = {}
@@ -171,11 +217,17 @@ def processar_avaliacao(
     wb = Workbook()
     ws = wb.active
     ws.title = "Avaliacao"
+    wrap_align = Alignment(wrap_text=True, vertical="top")
 
-    # Cabecalho: Matricula | Pergunta1 | Pergunta2 | ...
-    ws.cell(row=1, column=1, value="Matricula")
+    # Cabecalho: Matricula | Pergunta1 | Pergunta2 | ... | Comentários
+    ws.cell(row=1, column=1, value="Matricula").alignment = wrap_align
     for i, p in enumerate(perguntas):
-        ws.cell(row=1, column=2 + i, value=p["pergunta"])
+        # Quebrar texto da pergunta com newlines para ficar compacto
+        texto_header = p["pergunta"].replace(" ", "\n", p["pergunta"].count(" ") // 2) if len(p["pergunta"]) > 30 else p["pergunta"]
+        cell = ws.cell(row=1, column=2 + i, value=texto_header)
+        cell.alignment = wrap_align
+    col_comentarios = 2 + len(perguntas)
+    ws.cell(row=1, column=col_comentarios, value="Comentários").alignment = wrap_align
 
     row = 2
     total_tars = len(todos_tar)
@@ -195,6 +247,9 @@ def processar_avaliacao(
         arquivos = extrair_tar(tar_bytes, nome_tar)
 
         ws.cell(row=row, column=1, value=matricula)
+
+        # Acumular justificativas para respostas negativas/parciais
+        justificativas_acumuladas: list[str] = []
 
         # Para cada pergunta, buscar o arquivo correspondente
         for i, p in enumerate(perguntas):
@@ -221,6 +276,28 @@ def processar_avaliacao(
                 logger.info(f"  [{matricula}] {p['pergunta'][:40]}... -> {resposta}")
 
             ws.cell(row=row, column=2 + i, value=resposta)
+
+            # Se resposta nao eh "Sim", pedir justificativa
+            resposta_limpa = resposta.replace("[MULTI-ARQUIVO] ", "")
+            if resposta_limpa.strip().upper() != "SIM":
+                try:
+                    justificativa = justificar_resposta(codigo, nome_desc, p["pergunta"], resposta_limpa)
+                    justificativas_acumuladas.append(f"{p['pergunta'][:50]}: {justificativa}")
+                except Exception as e:
+                    logger.warning(f"  Erro ao justificar: {e}")
+
+        # Gerar comentario resumido se houve respostas negativas/parciais
+        if justificativas_acumuladas:
+            with avaliacao_lock:
+                avaliacao_estado["progresso"] = f"{matricula} - gerando comentário ({t_idx+1}/{total_tars})"
+            try:
+                comentario = resumir_comentarios(justificativas_acumuladas)
+            except Exception as e:
+                logger.warning(f"  Erro ao resumir comentarios: {e}")
+                comentario = "; ".join(justificativas_acumuladas)
+            cell = ws.cell(row=row, column=col_comentarios, value=comentario)
+            cell.alignment = wrap_align
+            logger.info(f"  [{matricula}] Comentário: {comentario[:80]}...")
 
         row += 1
 
