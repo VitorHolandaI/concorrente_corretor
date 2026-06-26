@@ -14,6 +14,8 @@ from langchain_ollama import ChatOllama
 from openpyxl import Workbook
 from openpyxl.styles import Alignment
 
+from config import OLLAMA_BASE_URL, OLLAMA_MODEL
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
 
@@ -25,9 +27,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-OLLAMA_BASE_URL = "http://localhost:11434"
-OLLAMA_MODEL = "gpt-oss:latest"
 
 llm = ChatOllama(
     model=OLLAMA_MODEL,
