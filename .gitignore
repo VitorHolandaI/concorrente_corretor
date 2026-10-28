@@ -106,3 +106,8 @@ docker-compose.*.yml
 *.swn
 *.bak
 *.old
+
+# Planilha gerada pelo app, com matrícula e nota de aluno
+back/avaliacao.xlsx
+*.tar.gz
+.env
